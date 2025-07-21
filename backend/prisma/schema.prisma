@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id              BigInt    @id @default(autoincrement())
+  wallet_address       String    @unique
+  username             String
+  email                String    @unique
+  profile_pic          String?
+  subscription_status  Boolean   @default(false)
+  total_points         BigInt    @default(0)
+  total_steps          BigInt    @default(0)
+  updated_at           DateTime  @updatedAt
+
+  quests               UserQuestProfile[]
+  stepRecords          StepRecord[]
+  trackSessions        TrackSession[]
+  mapTracks            MapTrack[]
+  rewardClaims         RewardClaim[]
+  socialShares         SocialShare[]
+  nfts                 NFT[]
+}
+
+model Quest {
+  quest_id          BigInt    @id @default(autoincrement())
+  title             String
+  description       String
+  target_steps      BigInt
+  reward_type       String
+  points            BigInt
+  completed         Boolean   @default(false)
+  claimed           DateTime?
+  difficulty        String
+
+  userQuestProfiles UserQuestProfile[]
+  trackSessions     TrackSession[]
+  mapTracks         MapTrack[]
+  rewardClaims      RewardClaim[]
+}
+
+model UserQuestProfile {
+  uqg_id       BigInt   @id @default(autoincrement())
+  user_id      BigInt
+  quest_id     BigInt
+  progress     BigInt
+  status       String
+  started_at   DateTime
+  updated_at   DateTime
+
+  user         User     @relation(fields: [user_id], references: [user_id])
+  quest        Quest    @relation(fields: [quest_id], references: [quest_id])
+}
+
+model TrackSession {
+  session_id   BigInt    @id @default(autoincrement())
+  user_id      BigInt
+  quest_id     BigInt
+  started_at   DateTime
+  ended_at     DateTime?
+  gpx_data     Json
+  notes        String?
+  created_by   String
+
+  user         User      @relation(fields: [user_id], references: [user_id])
+  quest        Quest     @relation(fields: [quest_id], references: [quest_id])
+  mapTracks    MapTrack[]
+}
+
+model MapTrack {
+  track_id         BigInt    @id @default(autoincrement())
+  user_id          BigInt
+  quest_id         BigInt
+  session_id       BigInt
+  latitude         Decimal   @db.Decimal(9, 6)
+  longitude        Decimal   @db.Decimal(9, 6)
+  fieldTimestamp   DateTime
+
+  user             User      @relation(fields: [user_id], references: [user_id])
+  quest            Quest     @relation(fields: [quest_id], references: [quest_id])
+  session          TrackSession @relation(fields: [session_id], references: [session_id])
+}
+
+model StepRecord {
+  record_id     BigInt   @id @default(autoincrement())
+  user_id       BigInt
+  steps         BigInt
+  timestamp     DateTime
+  location_data String?
+  valid         Boolean  @default(true)
+
+  user          User     @relation(fields: [user_id], references: [user_id])
+}
+
+model SocialShare {
+  share_id      BigInt   @id @default(autoincrement())
+  user_id       BigInt
+  share_type    String
+  content_link  String
+  shared_at     DateTime
+
+  user          User     @relation(fields: [user_id], references: [user_id])
+}
+
+model RewardClaim {
+  claim_id       BigInt   @id @default(autoincrement())
+  user_id        BigInt
+  quest_id       BigInt
+  tx_hash        String
+  points_rewarded BigInt
+  reward_type    String
+  claim_at       DateTime
+
+  user           User     @relation(fields: [user_id], references: [user_id])
+  quest          Quest    @relation(fields: [quest_id], references: [quest_id])
+}
+
+model NFT {
+  nft_id         BigInt   @id @default(autoincrement())
+  user_id        BigInt
+  type           String
+  image_url      String
+  metadata       Json
+  minted_at      DateTime
+
+  user           User     @relation(fields: [user_id], references: [user_id])
+}
